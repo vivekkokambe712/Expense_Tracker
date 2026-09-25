@@ -48,7 +48,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'An unexpected internal error occurred' });
 });
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`Backend server running on http://localhost:${PORT}`);
   });
