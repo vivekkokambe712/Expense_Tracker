@@ -11,8 +11,6 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
-import { seedSampleData } from './seedSampleData.js';
-
 export const dbPath = process.env.DB_PATH || path.join(dataDir, 'tracker.db');
 const db = new DatabaseSync(dbPath);
 
@@ -142,13 +140,6 @@ export function initDb() {
   `);
 
   seedDefaults();
-  if (process.env.NODE_ENV !== 'test') {
-    try {
-      seedSampleData();
-    } catch (e) {
-      console.error('Error seeding sample data:', e);
-    }
-  }
 }
 
 function seedDefaults() {
