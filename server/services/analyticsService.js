@@ -409,7 +409,7 @@ export function detectRecurringExpenses() {
       MAX(transaction_date) AS last_date
     FROM transactions
     WHERE type = 'Expense' AND deleted_at IS NULL
-    GROUP BY item_name
+    GROUP BY item_name, category_id, subcategory_id
     HAVING COUNT(id) >= 2
   `).all();
 
