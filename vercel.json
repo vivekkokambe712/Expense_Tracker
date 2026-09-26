@@ -1,6 +1,14 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/index.js": {
+      "includeFiles": [
+        "server/database/postgres-worker.js",
+        "supabase/migrations/001_initial_schema.sql"
+      ]
+    }
+  },
   "rewrites": [
     {
       "source": "/api/:path*",

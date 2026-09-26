@@ -1,25 +1,59 @@
 import { DatabaseSync } from 'node:sqlite';
+import { execFileSync } from 'node:child_process';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
+const usePostgres = Boolean(process.env.DATABASE_URL);
 const dataDir = process.env.VERCEL ? '/tmp' : path.join(__dirname, '..', 'data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+export const dbPath = usePostgres ? null : (process.env.DB_PATH || path.join(dataDir, 'tracker.db'));
+
+function callPostgres(action, sql, params = []) {
+  const workerPath = path.join(__dirname, 'postgres-worker.js');
+  const output = execFileSync(process.execPath, [workerPath], {
+    input: JSON.stringify({ action, sql, params }),
+    encoding: 'utf8',
+    env: process.env,
+    maxBuffer: 10 * 1024 * 1024
+  });
+  return JSON.parse(output);
 }
 
-export const dbPath = process.env.DB_PATH || path.join(dataDir, 'tracker.db');
-const db = new DatabaseSync(dbPath);
+let db;
 
-// Enable WAL mode and Foreign Keys
-db.exec('PRAGMA journal_mode = WAL;');
-db.exec('PRAGMA foreign_keys = ON;');
+if (usePostgres) {
+  db = {
+    exec: (sql) => callPostgres('exec', sql),
+    prepare: (sql) => ({
+      get: (...params) => callPostgres('get', sql, params),
+      all: (...params) => callPostgres('all', sql, params),
+      run: (...params) => {
+        const insertSql = /^\s*INSERT\b/i.test(sql) && !/\bRETURNING\b/i.test(sql)
+          ? `${sql.trimEnd()} RETURNING id`
+          : sql;
+        return callPostgres('run', insertSql, params);
+      }
+    })
+  };
+} else {
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+
+  db = new DatabaseSync(dbPath);
+
+  // Enable WAL mode and Foreign Keys
+  db.exec('PRAGMA journal_mode = WAL;');
+  db.exec('PRAGMA foreign_keys = ON;');
+}
 
 // Helper for atomic transactions
 db.transaction = (fn) => {
+  if (usePostgres) {
+    return (...args) => fn(...args);
+  }
   return (...args) => {
     db.exec('BEGIN');
     try {
@@ -34,6 +68,12 @@ db.transaction = (fn) => {
 };
 
 export function initDb() {
+  if (usePostgres) {
+    const migrationPath = path.join(__dirname, '..', '..', 'supabase', 'migrations', '001_initial_schema.sql');
+    db.exec(fs.readFileSync(migrationPath, 'utf8'));
+    return;
+  }
+
   // 1. Categories
   db.exec(`
     CREATE TABLE IF NOT EXISTS categories (
