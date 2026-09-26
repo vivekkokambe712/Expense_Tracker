@@ -21,14 +21,27 @@ function callPostgres(action, sql, params = []) {
   return JSON.parse(output);
 }
 
+function normalizePostgresRows(value) {
+  if (Array.isArray(value)) return value.map(normalizePostgresRows);
+  if (!value || typeof value !== 'object') return value;
+
+  return Object.fromEntries(Object.entries(value).map(([key, entry]) => {
+    const normalized = normalizePostgresRows(entry);
+    if ((key === 'id' || key.endsWith('_id')) && typeof normalized === 'string' && /^\d+$/.test(normalized)) {
+      return [key, Number(normalized)];
+    }
+    return [key, normalized];
+  }));
+}
+
 let db;
 
 if (usePostgres) {
   db = {
     exec: (sql) => callPostgres('exec', sql),
     prepare: (sql) => ({
-      get: (...params) => callPostgres('get', sql, params),
-      all: (...params) => callPostgres('all', sql, params),
+      get: (...params) => normalizePostgresRows(callPostgres('get', sql, params)),
+      all: (...params) => normalizePostgresRows(callPostgres('all', sql, params)),
       run: (...params) => {
         const insertSql = /^\s*INSERT\b/i.test(sql) && !/\bRETURNING\b/i.test(sql)
           ? `${sql.trimEnd()} RETURNING id`

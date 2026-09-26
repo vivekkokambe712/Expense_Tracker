@@ -22,6 +22,33 @@ import {
 
 const router = express.Router();
 
+router.get('/metadata', (req, res) => {
+  try {
+    const categories = db.prepare(`
+      SELECT * FROM categories WHERE is_active = 1 ORDER BY type, name
+    `).all();
+    const subcategories = db.prepare(`
+      SELECT * FROM subcategories WHERE is_active = 1 ORDER BY name
+    `).all();
+    const paymentMethods = db.prepare(`
+      SELECT * FROM payment_methods WHERE is_active = 1 ORDER BY id ASC
+    `).all();
+    const settingsRows = db.prepare('SELECT * FROM settings').all();
+    const settings = Object.fromEntries(settingsRows.map(row => [row.key, row.value]));
+
+    res.json({
+      categories: categories.map(category => ({
+        ...category,
+        subcategories: subcategories.filter(subcategory => subcategory.category_id === category.id)
+      })),
+      paymentMethods,
+      settings
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to fetch initial metadata' });
+  }
+});
+
 // ==========================================
 // TRANSACTIONS
 // ==========================================

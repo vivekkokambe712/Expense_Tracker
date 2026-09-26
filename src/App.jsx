@@ -37,13 +37,10 @@ export default function App() {
 
   const loadInitialData = async () => {
     try {
-      const [cats, pms, settings] = await Promise.all([
-        api.getCategories(false),
-        api.getPaymentMethods(),
-        api.getSettings().catch(() => ({}))
-      ]);
-      setCategories(cats || []);
-      setPaymentMethods(pms || []);
+      const metadata = await api.getInitialMetadata();
+      setCategories(metadata.categories || []);
+      setPaymentMethods(metadata.paymentMethods || []);
+      const settings = metadata.settings || {};
       if (settings?.currency_symbol) {
         setCurrency(settings.currency_symbol);
       }

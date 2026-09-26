@@ -22,6 +22,8 @@ async function request(endpoint, options = {}) {
 }
 
 export const api = {
+  getInitialMetadata: () => request('/metadata'),
+
   // Summary
   getSummary: (period, startDate, endDate) => {
     const params = new URLSearchParams();
