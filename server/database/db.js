@@ -69,7 +69,7 @@ db.transaction = (fn) => {
 
 export function initDb() {
   if (usePostgres) {
-    const migrationPath = path.join(__dirname, '..', '..', 'supabase', 'migrations', '001_initial_schema.sql');
+    const migrationPath = path.join(__dirname, 'initial-schema.sql');
     db.exec(fs.readFileSync(migrationPath, 'utf8'));
     return;
   }
