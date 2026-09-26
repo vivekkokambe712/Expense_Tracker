@@ -13,7 +13,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Initialize DB schema & defaults
-initDb();
+let dbInitError = null;
+try {
+  initDb();
+} catch (err) {
+  dbInitError = err;
+  console.error('Database initialization failed:', err);
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -27,6 +33,13 @@ app.use('/api', apiRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
+  if (dbInitError) {
+    return res.status(503).json({
+      status: 'error',
+      database: 'unavailable',
+      error: dbInitError.message
+    });
+  }
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
