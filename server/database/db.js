@@ -27,7 +27,7 @@ function normalizePostgresRows(value) {
 
   return Object.fromEntries(Object.entries(value).map(([key, entry]) => {
     const normalized = normalizePostgresRows(entry);
-    if ((key === 'id' || key.endsWith('_id')) && typeof normalized === 'string' && /^\d+$/.test(normalized)) {
+    if (typeof normalized === 'string' && /^-?\d+(\.\d+)?$/.test(normalized)) {
       return [key, Number(normalized)];
     }
     return [key, normalized];

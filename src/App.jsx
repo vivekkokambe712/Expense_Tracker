@@ -11,6 +11,7 @@ import { api } from './services/api.js';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [visitedTabs, setVisitedTabs] = useState(() => new Set(['dashboard']));
   const [categories, setCategories] = useState([]);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [currency, setCurrency] = useState('₹');
@@ -52,6 +53,13 @@ export default function App() {
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  useEffect(() => {
+    setVisitedTabs((current) => {
+      if (current.has(activeTab)) return current;
+      return new Set([...current, activeTab]);
+    });
+  }, [activeTab]);
 
   const triggerRefresh = () => {
     setRefreshTrigger((prev) => prev + 1);
@@ -127,19 +135,22 @@ export default function App() {
 
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 min-w-0 px-4 py-5 sm:px-8 sm:py-7 max-w-7xl mx-auto w-full">
-        {activeTab === 'dashboard' && (
-          <DashboardView
+        {(activeTab === 'dashboard' || visitedTabs.has('dashboard')) && (
+          <div className={activeTab === 'dashboard' ? '' : 'hidden'}>
+            <DashboardView
             onOpenAddModal={handleOpenAddModal}
             onNavigateTo={setActiveTab}
             onEditTransaction={handleEditTransaction}
             onDeleteTransaction={handleDeleteTransaction}
             currency={currency}
             refreshTrigger={refreshTrigger}
-          />
+            />
+          </div>
         )}
 
-        {activeTab === 'transactions' && (
-          <TransactionsView
+        {(activeTab === 'transactions' || visitedTabs.has('transactions')) && (
+          <div className={activeTab === 'transactions' ? '' : 'hidden'}>
+            <TransactionsView
             categories={categories}
             paymentMethods={paymentMethods}
             onOpenAddModal={handleOpenAddModal}
@@ -147,28 +158,34 @@ export default function App() {
             onDeleteTransaction={handleDeleteTransaction}
             currency={currency}
             refreshTrigger={refreshTrigger}
-          />
+            />
+          </div>
         )}
 
-        {activeTab === 'analytics' && (
-          <AnalyticsView
+        {(activeTab === 'analytics' || visitedTabs.has('analytics')) && (
+          <div className={activeTab === 'analytics' ? '' : 'hidden'}>
+            <AnalyticsView
             categories={categories}
             currency={currency}
             refreshTrigger={refreshTrigger}
-          />
+            />
+          </div>
         )}
 
-        {activeTab === 'recurring' && (
-          <RecurringView
+        {(activeTab === 'recurring' || visitedTabs.has('recurring')) && (
+          <div className={activeTab === 'recurring' ? '' : 'hidden'}>
+            <RecurringView
             categories={categories}
             onOpenAddModal={handleOpenAddModal}
             currency={currency}
             refreshTrigger={refreshTrigger}
-          />
+            />
+          </div>
         )}
 
-        {activeTab === 'settings' && (
-          <SettingsView
+        {(activeTab === 'settings' || visitedTabs.has('settings')) && (
+          <div className={activeTab === 'settings' ? '' : 'hidden'}>
+            <SettingsView
             categories={categories}
             paymentMethods={paymentMethods}
             onCategoriesUpdated={() => {
@@ -180,7 +197,8 @@ export default function App() {
               setCurrency(newCurr);
               await api.saveSettings({ currency_symbol: newCurr });
             }}
-          />
+            />
+          </div>
         )}
       </main>
 

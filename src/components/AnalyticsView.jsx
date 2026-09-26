@@ -70,28 +70,19 @@ export default function AnalyticsView({ categories = [], currency = '₹', refre
     try {
       const { startDate, endDate } = await getDates();
 
-      // 1. Category breakdown
-      const cats = await api.getCategoryBreakdown(startDate, endDate, 'Expense');
+      const [cats, items, freq, trends, monthly, payments] = await Promise.all([
+        api.getCategoryBreakdown(startDate, endDate, 'Expense'),
+        api.getItemBreakdown(startDate, endDate, selectedCatFilter, selectedSubFilter),
+        api.getFrequentItems(frequentSort, 15),
+        api.getTrends(trendTimeframe),
+        api.getMonthlySummary(),
+        api.getPaymentMethodBreakdown(startDate, endDate)
+      ]);
       setCategoryData(cats || { grandTotal: 0, categories: [] });
-
-      // 2. Item-level drilldown
-      const items = await api.getItemBreakdown(startDate, endDate, selectedCatFilter, selectedSubFilter);
       setItemData(items || []);
-
-      // 3. Frequent items
-      const freq = await api.getFrequentItems(frequentSort, 15);
       setFrequentItems(freq || []);
-
-      // 4. Trends
-      const trends = await api.getTrends(trendTimeframe);
       setTrendData(trends || []);
-
-      // 5. Monthly summary
-      const monthly = await api.getMonthlySummary();
       setMonthlySummary(monthly || []);
-
-      // 6. Payment method breakdown
-      const payments = await api.getPaymentMethodBreakdown(startDate, endDate);
       setPaymentData(payments || []);
     } catch (err) {
       console.error('Error loading analytics:', err);

@@ -48,17 +48,14 @@ export default function DashboardView({
       );
       setSummary(summaryData);
 
-      // Load recent 6 transactions
-      const txData = await api.getTransactions({ limit: 6 });
+      const [txData, recurring, catData] = await Promise.all([
+        api.getTransactions({ limit: 6 }),
+        api.detectRecurring(),
+        api.getCategoryBreakdown(summaryData.startDate, summaryData.endDate, 'Expense')
+      ]);
       setRecentTransactions(txData.items || []);
-
-      // Load recurring detections
-      const recurring = await api.detectRecurring();
       setRecurringSuggestions(recurring || []);
-
-      // Load category breakdown for current period
-      if (summaryData.startDate && summaryData.endDate) {
-        const catData = await api.getCategoryBreakdown(summaryData.startDate, summaryData.endDate, 'Expense');
+      if (catData) {
         setCategoryBreakdown(catData.categories?.slice(0, 4) || []);
       }
     } catch (err) {
