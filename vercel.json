@@ -3,10 +3,7 @@
   "outputDirectory": "dist",
   "functions": {
     "api/index.js": {
-      "includeFiles": [
-        "server/database/postgres-worker.js",
-        "supabase/migrations/001_initial_schema.sql"
-      ]
+      "includeFiles": "{server/database/postgres-worker.js,supabase/migrations/001_initial_schema.sql}"
     }
   },
   "rewrites": [
