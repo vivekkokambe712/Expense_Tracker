@@ -96,7 +96,7 @@ WHERE NOT EXISTS (
 INSERT INTO subcategories (category_id, name)
 SELECT c.id, s.name
 FROM categories c
-CROSS JOIN (VALUES
+JOIN (VALUES
   ('Business Expense', 'Raw Material'), ('Business Expense', 'Electricity Bill'),
   ('Business Expense', 'WiFi / Internet'), ('Business Expense', 'Miscellaneous'),
   ('Business Expense', 'Printing'), ('Business Expense', 'Maintenance'),
