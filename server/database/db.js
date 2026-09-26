@@ -9,8 +9,20 @@ const __dirname = path.dirname(__filename);
 const usePostgres = Boolean(process.env.DATABASE_URL);
 const dataDir = process.env.VERCEL ? '/tmp' : path.join(__dirname, '..', 'data');
 export const dbPath = usePostgres ? null : (process.env.DB_PATH || path.join(dataDir, 'tracker.db'));
+const postgresReadCache = new Map();
+const POSTGRES_CACHE_TTL_MS = 15_000;
 
 function callPostgres(action, sql, params = []) {
+  const isRead = action === 'get' || action === 'all';
+  const cacheKey = isRead ? JSON.stringify([action, sql, params]) : null;
+  if (cacheKey) {
+    const cached = postgresReadCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.value;
+    postgresReadCache.delete(cacheKey);
+  } else if (usePostgres) {
+    postgresReadCache.clear();
+  }
+
   const workerPath = path.join(__dirname, 'postgres-worker.js');
   const output = execFileSync(process.execPath, [workerPath], {
     input: JSON.stringify({ action, sql, params }),
@@ -18,7 +30,14 @@ function callPostgres(action, sql, params = []) {
     env: process.env,
     maxBuffer: 10 * 1024 * 1024
   });
-  return JSON.parse(output);
+  const result = JSON.parse(output);
+  if (cacheKey) {
+    postgresReadCache.set(cacheKey, {
+      value: result,
+      expiresAt: Date.now() + POSTGRES_CACHE_TTL_MS
+    });
+  }
+  return result;
 }
 
 function normalizePostgresRows(value) {
